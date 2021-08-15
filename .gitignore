@@ -35,3 +35,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# project specific
+/public/images/*
