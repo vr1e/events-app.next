@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import classes from './newsletter-registration.module.css';
 
-function NewsletterRegistration() {
+export default function NewsletterRegistration() {
 	const emailInputRef = useRef();
 	function registrationHandler(event) {
 		event.preventDefault();
@@ -37,5 +37,3 @@ function NewsletterRegistration() {
 		</section>
 	);
 }
-
-export default NewsletterRegistration;
