@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react';
-
+import { useContext, useEffect, useState } from 'react';
+import NotificationContext from '../../store/notification-context';
 import CommentList from './comment-list';
-import NewComment from './new-comment';
 import classes from './comments.module.css';
+import NewComment from './new-comment';
 
 export default function Comments(props) {
 	const { eventId } = props;
 
+	const notificationCtx = useContext(NotificationContext);
 	const [showComments, setShowComments] = useState(false);
 	const [comments, setComments] = useState([]);
+	const [isFetchingComments, setIsFetchingComments] = useState(false);
 
 	useEffect(() => {
 		if (showComments) {
+			setIsFetchingComments(true);
 			fetch('/api/comments/' + eventId)
 				.then(response => response.json())
 				.then(data => {
 					setComments(data.comments);
+					setIsFetchingComments(false);
 				});
 		}
 	}, [showComments]);
@@ -25,13 +29,41 @@ export default function Comments(props) {
 	}
 
 	function addCommentHandler(commentData) {
+		notificationCtx.showNotification({
+			title: 'Adding comment...',
+			message: 'Sending new comment.',
+			status: 'pending',
+		});
+
 		fetch('/api/comments/' + eventId, {
 			method: 'POST',
 			body: JSON.stringify(commentData),
 			headers: { 'Content-Type': 'application/json' },
 		})
-			.then(response => response.json())
-			.then(data => console.log(data));
+			.then(response => {
+				if (response.ok) {
+					return response.json();
+				}
+
+				return response.json().then(data => {
+					throw new Error(data.message || 'Something went wrong!');
+				});
+			})
+			.then(data => {
+				console.log(data);
+				notificationCtx.showNotification({
+					title: 'Success!',
+					message: 'Successfully added your comment!',
+					status: 'success',
+				});
+			})
+			.catch(error => {
+				notificationCtx.showNotification({
+					title: 'Error!',
+					message: error.message || 'Something went wrong!',
+					status: 'error',
+				});
+			});
 	}
 
 	return (
@@ -40,7 +72,8 @@ export default function Comments(props) {
 				{showComments ? 'Hide' : 'Show'} Comments
 			</button>
 			{showComments && <NewComment onAddComment={addCommentHandler} />}
-			{showComments && <CommentList items={comments} />}
+			{showComments && !isFetchingComments && <CommentList items={comments} />}
+			{showComments && isFetchingComments && <p>Loading...</p>}
 		</section>
 	);
 }
